@@ -4,6 +4,7 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.Scanner;
 
 import javafx.application.Application;
 import javafx.event.ActionEvent;
@@ -25,23 +26,24 @@ import javafx.scene.layout.VBox;
 import javafx.scene.text.Font;
 import javafx.stage.Stage;
 
-//				REQUEST				RESPONSE					LOG							MESSAGE (time, user, text)
-// CONNECT:		<1> <user>			=> <user>					=>	<00:00:00> <1> <user>	=>
-// DISCONNECT:	<2> <user>			=>							=>	<00:00:00> <2> <user>	=>
-// CLEAR:		<3> <user>			=> 							=>	<00:00:00> <3> <user>	=>
-// POST:		<4> <user> <text>	=> <time> <user> <text>		=>	<00:00:00> <4> <user>	=>	<00:00:00> <user> <text>
-
-// list of clients ???
-// displayChat(); ???
-// displayClients(); ???
-// add status codes?
-// pin and unpin?
-
 public class MBClient {
 	
+	public static final int CMD_NULL = 0;
+	public static final int CMD_CONNECT = 1;
+	public static final int CMD_DISCONNECT = 2;
+	public static final int CMD_CLEAR = 3;
+	public static final int CMD_POST = 4;
+	public static final int CMD_UPDATE = 5;
+	public static final int IP_OCTET_MAX = 255;
+	public static final int IP_OCTET_MIN = 0;
+	public static final int PORT_MAX = 65535;
+	public static final int PORT_MIN = 0;
+	public static final int VIEW_MAIN_HEIGHT = 410;
+	public static final int VIEW_MAIN_WIDTH = 510;
 	public static final Font FONT_BOARD = Font.font( "Agency FB", 12 );
 	public static final Font FONT_CONTROL = Font.font( "Agency FB", 14);
 	public static final Font FONT_LABEL = Font.font( "Verdana", 12 );
+	public static final String ERROR_NO_ADDRESS_PORT = "ERROR: NO ADDRESS AND/OR PORT SPECIFIED.";
 	public static final String TEXT_CONTROL_ABOUT = "About";
 	public static final String TEXT_CONTROL_CLEAR = "CLEAR";
 	public static final String TEXT_CONTROL_CONNECT = "CONNECT";
@@ -51,17 +53,7 @@ public class MBClient {
 	public static final String TEXT_LABEL_IP = "IP Address:";
 	public static final String TEXT_LABEL_MESSAGE = "MESSAGE BOARD";
 	public static final String TEXT_LABEL_PORT = "Port:";
-	public static final int CMD_NULL = 0;
-	public static final int CMD_CONNECT = 1;
-	public static final int CMD_DISCONNECT = 2;
-	public static final int CMD_CLEAR = 3;
-	public static final int CMD_POST = 4;
-	public static final int IP_OCTET_MAX = 255;
-	public static final int IP_OCTET_MIN = 0;
-	public static final int PORT_MAX = 65535;
-	public static final int PORT_MIN = 0;
-	public static final int VIEW_MAIN_HEIGHT = 410;
-	public static final int VIEW_MAIN_WIDTH = 510;
+	public static final String USERNAME_DEFAULT = "MBUser";
 	
 	public static class View extends Application implements EventHandler<ActionEvent> {
 		
@@ -107,7 +99,7 @@ public class MBClient {
 			this.in = null;
 			this.out = null;
 			this.socket = null;
-			this.username = "user1"; // ???
+			this.username = USERNAME_DEFAULT;
 		}
 
 		private void connect( String address, int port ) {
@@ -161,7 +153,7 @@ public class MBClient {
 				e.printStackTrace();
 			}
 		}
-		
+
 		private String getAddress() {
 			boolean valid = true;
 			int values[] = new int[4];
@@ -195,29 +187,6 @@ public class MBClient {
 				}
 			} catch ( NumberFormatException e ) {
 				return -1;
-			}
-		}
-		
-		@Override
-		public void handle( ActionEvent event ) {
-			if ( event.getSource() == btnConnect ) {
-				if ( socket == null || socket.isClosed() ) {
-					String address = getAddress();
-					int port = getPort();
-					if ( address != "" && port != -1 ) {
-						connect( getAddress(), getPort() );
-						request( CMD_CONNECT );
-					} else {
-						// ERROR
-					}
-				} else {
-					request( CMD_DISCONNECT );
-					disconnect();
-				}
-			} else if ( event.getSource() == btnPost ) {
-				request( CMD_POST );
-			} else if ( event.getSource() == btnClear ) {
-				request( CMD_CLEAR );
 			}
 		}
 		
@@ -366,10 +335,24 @@ public class MBClient {
 		
 		private void request( int command ) {
 			if ( out != null && in != null ) {
-				if ( command == CMD_CONNECT ) {
+				String response = "";
+				if ( command == CMD_NULL ) {
+					out.println( command );
+					try {
+						response = in.readLine();
+						Scanner input = new Scanner( response );
+						if ( input.nextInt() == CMD_UPDATE ) {
+							updateClients( input.nextLine() );
+						}
+						input.close();
+					} catch ( IOException e ) {
+						e.printStackTrace();
+					}
+				}
+				else if ( command == CMD_CONNECT ) {
 					out.println( command + " " + username );
 					try {
-						String response = in.readLine() + "\n";
+						response = in.readLine() + "\n";
 						txaClient.appendText( response );
 					} catch ( IOException e ) {
 						e.printStackTrace();
@@ -382,7 +365,7 @@ public class MBClient {
 				} else if ( command == CMD_POST ) {
 					out.println( command + " " + username + " " + txaMessage.getText() );
 					try {
-						String response = in.readLine() + "\n";
+						response = in.readLine() + "\n";
 						txaChat.appendText( response );
 						txaMessage.clear();
 					} catch ( IOException e ) {
@@ -392,6 +375,44 @@ public class MBClient {
 			}
 		}
 
+		private void updateClients( String clients ) {
+			if ( clients != "" ) {
+				Scanner input = new Scanner( clients );
+				String client;
+				txaClient.clear();
+				while ( input.hasNext() ) {
+					client = input.next();
+					txaClient.appendText( client + "\n" );
+					
+				}
+				input.close();
+			}
+		}
+		
+		@Override
+		public void handle( ActionEvent event ) {
+			if ( event.getSource() == btnConnect ) {
+				if ( socket == null || socket.isClosed() ) {
+					String address = getAddress();
+					int port = getPort();
+					if ( address != "" && port != -1 ) {
+						connect( getAddress(), getPort() );
+						request( CMD_CONNECT );
+					} else {
+						System.err.println( ERROR_NO_ADDRESS_PORT );
+					}
+				} else {
+					request( CMD_DISCONNECT );
+					disconnect();
+				}
+			} else if ( event.getSource() == btnPost ) {
+				request( CMD_POST );
+			} else if ( event.getSource() == btnClear ) {
+				request( CMD_CLEAR );
+			}
+			request( CMD_NULL );
+		}
+		
 		@Override
 		public void start( Stage main ) {
 			initializeView();
