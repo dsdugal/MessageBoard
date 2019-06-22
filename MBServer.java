@@ -418,21 +418,9 @@ public class MBServer {
 				if ( input.hasNext() ) {
 					int command = input.nextInt();
 					if ( input.hasNext() ) {
-						String username = input.next(); // +++
+						String username = input.next();
 						if ( command == CMD_NULL ) {
-							/*
-							if ( board.getStatus() == STATUS_UPDATE ) {
-								String clientList = "";
-								for ( Client client : board.clients ) {
-									clientList += client.getName() + "";
-								}
-								out.println( CMD_UPDATE + " " + clientList );
-								board.setStatus( STATUS_NO_UPDATE );
-							} else {
-								out.println( CMD_NULL );
-							}
-							*/
-							out.println( CMD_NULL ); // ???
+							out.println( CMD_NULL );
 						} else if ( command == CMD_CONNECT ) {
 							board.addClient( new Client( 0, username ));
 							out.println( username );
@@ -441,10 +429,20 @@ public class MBServer {
 						} else if ( command == CMD_CLEAR ) {
 							board.clear();
 						} else if ( command == CMD_POST ) {
-							String text = input.nextLine();
-							Message msg = new Message( username, text );
-							board.addMsg( msg );
-							out.println( msg );
+							if ( input.hasNext() ) {
+								String text = input.nextLine();
+								Message msg = new Message( username, text );
+								board.addMsg( msg );
+								out.println( msg );
+							} else {
+								out.println( CMD_NULL );
+							}
+						} else if ( command == CMD_UPDATE ) {
+							String clientList = "";
+							for ( Client client : board.clients ) {
+								clientList += client.getName() + "";
+							}
+							out.println( clientList );
 						}
 					}
 					log( request );
@@ -465,22 +463,10 @@ public class MBServer {
 				BufferedReader in = new BufferedReader(new InputStreamReader( socket.getInputStream() ));
 				PrintWriter out = new PrintWriter( socket.getOutputStream(), true );
 				String request;
-				long previousTime = 0; //
-				long currentTime = 0; //
 				while ( true ) {
-					if ((request = in.readLine()) != null ) { // while
-						/*
-						currentTime = System.currentTimeMillis();
-						if (( currentTime - previousTime ) >= BROADCAST_INTERVAL ) {
-							System.out.println( "broadcast time: " + currentTime );
-							previousTime = currentTime;
-						}
-						*/
-
+					if ((request = in.readLine()) != null ) {
 						service( request, out );
 					}
-					System.err.println( System.currentTimeMillis() ); // DEBUG
-
 				}
 			} catch ( IOException e ) {
 				e.printStackTrace();

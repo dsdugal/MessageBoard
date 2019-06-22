@@ -19,7 +19,6 @@ import java.net.ConnectException;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.Scanner;
-
 import javafx.application.Application;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
@@ -463,25 +462,12 @@ public class MBClient {
 		 * 
 		 ************************************************************* */
 		
-		private void request( int command ) {
+		private void request( int command )  {
 			if ( out != null && in != null ) {
 				String response = "";
 				if ( command == CMD_NULL ) {
 					out.println( command );
-					/*
-					try {
-						response = in.readLine();
-						Scanner input = new Scanner( response );
-						if ( input.hasNext() && input.nextInt() == CMD_UPDATE ) {
-							updateClients( input.nextLine() );
-						}
-						input.close();
-					} catch ( IOException e ) {
-						e.printStackTrace();
-					}
-					*/
-				}
-				else if ( command == CMD_CONNECT ) {
+				} else if ( command == CMD_CONNECT ) {
 					out.println( command + " " + username );
 					try {
 						response = in.readLine() + "\n";
@@ -495,15 +481,26 @@ public class MBClient {
 					out.println( command + " " + username );
 					txaChat.clear();
 				} else if ( command == CMD_POST ) {
-					out.println( command + " " + username + " " + txaMessage.getText() );
+					if ( !txaMessage.getText().trim().isEmpty() ) {
+						out.println( command + " " + username + " " + txaMessage.getText() );
+						try {
+							response = in.readLine() + "\n";
+							txaChat.appendText( response );
+							txaMessage.clear();
+						} catch ( IOException e ) {
+							e.printStackTrace();
+						}
+					}
+				} else if ( command == CMD_UPDATE ) {
+					out.println( CMD_UPDATE + " " + username );
 					try {
 						response = in.readLine() + "\n";
-						txaChat.appendText( response );
-						txaMessage.clear();
+						updateClients( response );
 					} catch ( IOException e ) {
 						e.printStackTrace();
 					}
 				}
+
 			}
 		}
 		
@@ -525,12 +522,9 @@ public class MBClient {
 		private void updateClients( String clients ) {
 			if ( clients != "" ) {
 				Scanner input = new Scanner( clients );
-				String client;
 				txaClient.clear();
 				while ( input.hasNext() ) {
-					client = input.next();
-					txaClient.appendText( client + "\n" );
-					
+					txaClient.appendText( input.next() + "\n" );	
 				}
 				input.close();
 			}
@@ -565,7 +559,9 @@ public class MBClient {
 			} else if ( event.getSource() == btnClear ) {
 				request( CMD_CLEAR );
 			}
-			// request( CMD_NULL );
+			if ( socket != null && !socket.isClosed() ) {
+				request( CMD_UPDATE );
+			}
 		}
 		
 		/* *************************************************************
