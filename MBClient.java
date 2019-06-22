@@ -1,7 +1,21 @@
+/* *************************************************************
+ * 
+ * A message board client with a GUI to support chat
+ * functionality for one connected client.
+ * 
+ * Title		MBClient.java
+ * Author		Dustin Dugal
+ * Email		dsdugal@gmail.com
+ * Updated		2019-06-06
+ * Version		1.0 (alpha)
+ * 
+ ************************************************************* */
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.net.ConnectException;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.Scanner;
@@ -28,6 +42,12 @@ import javafx.stage.Stage;
 
 public class MBClient {
 	
+	/* *************************************************************
+	 * 
+	 * Static constants.
+	 * 
+	 ************************************************************* */
+	
 	public static final int CMD_NULL = 0;
 	public static final int CMD_CONNECT = 1;
 	public static final int CMD_DISCONNECT = 2;
@@ -38,12 +58,13 @@ public class MBClient {
 	public static final int IP_OCTET_MIN = 0;
 	public static final int PORT_MAX = 65535;
 	public static final int PORT_MIN = 0;
-	public static final int VIEW_MAIN_HEIGHT = 410;
+	public static final int VIEW_MAIN_HEIGHT = 400;
 	public static final int VIEW_MAIN_WIDTH = 510;
 	public static final Font FONT_BOARD = Font.font( "Agency FB", 12 );
 	public static final Font FONT_CONTROL = Font.font( "Agency FB", 14);
 	public static final Font FONT_LABEL = Font.font( "Verdana", 12 );
 	public static final String ERROR_NO_ADDRESS_PORT = "ERROR: NO ADDRESS AND/OR PORT SPECIFIED.";
+	public static final String ERROR_NO_SERVER = "ERROR: COULD NOT ESTABLISH CONNECTION WITH SERVER.";
 	public static final String TEXT_CONTROL_ABOUT = "About";
 	public static final String TEXT_CONTROL_CLEAR = "CLEAR";
 	public static final String TEXT_CONTROL_CONNECT = "CONNECT";
@@ -55,7 +76,19 @@ public class MBClient {
 	public static final String TEXT_LABEL_PORT = "Port:";
 	public static final String USERNAME_DEFAULT = "MBUser";
 	
+	/* *************************************************************
+	 * 
+	 * Interface to facilitate client-server interactions.
+	 * 
+	 ************************************************************* */
+	
 	public static class View extends Application implements EventHandler<ActionEvent> {
+		
+		/* *************************************************************
+		 * 
+		 * GUI elements.
+		 * 
+		 ************************************************************* */
 		
 		private Button btnClear;
 		private Button btnConnect;
@@ -90,10 +123,24 @@ public class MBClient {
 		private VBox vbxChat;
 		private VBox vbxInteract;
 		
+		/* *************************************************************
+		 * 
+		 * Client resources.
+		 * 
+		 ************************************************************* */
+		
 		private BufferedReader in;
 		private PrintWriter out;
 		private Socket socket;
 		private String username;
+		
+		/* *************************************************************
+		 * 
+		 * Constructor.
+		 * 
+		 * Use: View view = new View()
+		 * 
+		 ************************************************************* */
 		
 		public View() {
 			this.in = null;
@@ -102,6 +149,24 @@ public class MBClient {
 			this.username = USERNAME_DEFAULT;
 		}
 
+		/* *************************************************************
+		 * 
+		 * Connects this client to the given server through a TCP
+		 * socket.
+		 * 
+		 * Parameters:
+		 * 		address (String)
+		 * 			A string in the format a.b.c.d where a, b, c, and d
+		 * 			are integers between 0 and 255.
+		 *   
+		 *   	port (int)
+		 *   		An integer between 0 and 65535.
+		 * 
+		 * Use:
+		 * 		connect( address, port );
+		 * 
+		 ************************************************************* */
+		
 		private void connect( String address, int port ) {
 			try {
 				socket = new Socket( address, port );
@@ -120,10 +185,22 @@ public class MBClient {
 				txfPort.setDisable( true );
 			} catch ( UnknownHostException e ) {
 				e.printStackTrace();
+			} catch ( ConnectException e ) {
+				System.err.println( ERROR_NO_SERVER );
 			} catch ( IOException e ) {
 				e.printStackTrace();
 			}
 		}
+		
+		/* *************************************************************
+		 * 
+		 * Disconnects this client from a server connected through its
+		 * private TCP socket.
+		 * 
+		 * Use:
+		 * 		disconnect();
+		 * 
+		 ************************************************************* */
 		
 		private void disconnect() {
 			try {
@@ -153,6 +230,16 @@ public class MBClient {
 				e.printStackTrace();
 			}
 		}
+		
+		/* *************************************************************
+		 * 
+		 * Constructs and returns a valid IP address from the
+		 * information input by a user into the GUI elements.
+		 * 
+		 * Use:
+		 * 		String address = getAddress();
+		 * 
+		 ************************************************************* */
 
 		private String getAddress() {
 			boolean valid = true;
@@ -177,6 +264,16 @@ public class MBClient {
 			}
 		}
 		
+		/* *************************************************************
+		 * 
+		 * Constructs and returns a valid network port number from the
+		 * information input by a user into the GUI elements.
+		 * 
+		 * Use:
+		 * 		String port = getPort();
+		 * 
+		 ************************************************************* */
+		
 		private int getPort() {
 			try {
 				int port = Integer.parseInt( txfPort.getText() );
@@ -189,6 +286,15 @@ public class MBClient {
 				return -1;
 			}
 		}
+		
+		/* *************************************************************
+		 * 
+		 * Constructs and determines the properties of the GUI elements.
+		 * 
+		 * Use:
+		 * 		initializeView();
+		 * 
+		 ************************************************************* */
 		
 		private void initializeView() {
 			btnClear = new Button( TEXT_CONTROL_CLEAR );
@@ -299,6 +405,15 @@ public class MBClient {
 			vbxInteract = new VBox();
 		}
 		
+		/* *************************************************************
+		 * 
+		 * Determines the structure and position of the GUI elements.
+		 * 
+		 * Use:
+		 * 		layoutView();
+		 * 
+		 ************************************************************* */
+		
 		private void layoutView() {
 			hbxConnect.getChildren().add( labIPaddress );
 			hbxConnect.getChildren().add( txfIPa );
@@ -333,21 +448,38 @@ public class MBClient {
 			vbxBackground.getChildren().add( tpnChat );
 		}
 		
+		/* *************************************************************
+		 * 
+		 * Sends a request from this client to the server connected to
+		 * it through its TCP connection.
+		 * 
+		 * Parameters:
+		 *		command (int)
+		 *			A single-digit integer between 0 and 5, where each
+		 *			number corresponds to a specific command. 
+		 *
+		 * Use:
+		 * 		request( command );
+		 * 
+		 ************************************************************* */
+		
 		private void request( int command ) {
 			if ( out != null && in != null ) {
 				String response = "";
 				if ( command == CMD_NULL ) {
 					out.println( command );
+					/*
 					try {
 						response = in.readLine();
 						Scanner input = new Scanner( response );
-						if ( input.nextInt() == CMD_UPDATE ) {
+						if ( input.hasNext() && input.nextInt() == CMD_UPDATE ) {
 							updateClients( input.nextLine() );
 						}
 						input.close();
 					} catch ( IOException e ) {
 						e.printStackTrace();
 					}
+					*/
 				}
 				else if ( command == CMD_CONNECT ) {
 					out.println( command + " " + username );
@@ -374,6 +506,21 @@ public class MBClient {
 				}
 			}
 		}
+		
+		/* *************************************************************
+		 * 
+		 * Updates this client's list of server-connected users to
+		 * display on the GUI.
+		 * 
+		 * Parameters:
+		 * 		clients (String)
+		 * 			A space-delimited list of clients connected to the
+		 * 			server.
+		 * 
+		 * Use:
+		 * 		updateClients( clients );
+		 * 
+		 ************************************************************* */
 
 		private void updateClients( String clients ) {
 			if ( clients != "" ) {
@@ -388,6 +535,14 @@ public class MBClient {
 				input.close();
 			}
 		}
+		
+		/* *************************************************************
+		 * 
+		 * Controls the client's responses to events related to the GUI.
+		 * 
+		 * Required for JavaFX.
+		 * 
+		 ************************************************************* */
 		
 		@Override
 		public void handle( ActionEvent event ) {
@@ -410,8 +565,16 @@ public class MBClient {
 			} else if ( event.getSource() == btnClear ) {
 				request( CMD_CLEAR );
 			}
-			request( CMD_NULL );
+			// request( CMD_NULL );
 		}
+		
+		/* *************************************************************
+		 * 
+		 * Starts the client's GUI.
+		 * 
+		 * Required for JavaFX.
+		 * 
+		 ************************************************************* */
 		
 		@Override
 		public void start( Stage main ) {
@@ -425,6 +588,16 @@ public class MBClient {
 		
 	}
 
+	/* *************************************************************
+	 * 
+	 * Launches the client.
+	 * 
+	 * Parameters:
+	 * 		args (String array)
+	 * 			Unused.
+	 * 
+	 ************************************************************* */
+	
 	public static void main( String[] args ) {
 		Application.launch( View.class, args );
 	}
