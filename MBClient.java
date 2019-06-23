@@ -6,8 +6,8 @@
  * Title		MBClient.java
  * Author		Dustin Dugal
  * Email		dsdugal@gmail.com
- * Updated		2019-06-06
- * Version		1.0 (alpha)
+ * Updated		2019-06-22
+ * Version		0.1 (alpha)
  * 
  ************************************************************* */
 
