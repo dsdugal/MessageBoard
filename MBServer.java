@@ -6,8 +6,8 @@
  * Title	    MBServer.java
  * Author	    Dustin Dugal
  * Email	    dsdugal@gmail.com
- * Updated		2019-06-06
- * Version		1.0 (alpha)
+ * Updated	    2019-06-22
+ * Version	    0.1 (alpha)
  * 
  ************************************************************* */
 
@@ -32,7 +32,7 @@ public class MBServer {
 	 * 
 	 ************************************************************* */
 	
-	public static final int BROADCAST_INTERVAL = 15000;
+	public static final int BROADCAST_INTERVAL = 15000; // unused
 	public static final int CMD_NULL = 0;
 	public static final int CMD_CONNECT = 1;
 	public static final int CMD_DISCONNECT = 2;
