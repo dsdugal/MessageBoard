@@ -15,4 +15,4 @@ dsdugal@gmail.com
 
 ## Version
 
-Version 1.0 (beta), updated 2019-06-22.
+Version 0.1 (beta), updated 2019-06-22.
